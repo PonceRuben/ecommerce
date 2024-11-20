@@ -17,6 +17,7 @@ export default function NavBar() {
                     <li>Envíos</li>
                     <li>Ofertas</li>
                     <li>Favoritos</li>
+                    <li><Link href='/login'>Login</Link></li>
                 </ul>   
             </nav> 
         </>
