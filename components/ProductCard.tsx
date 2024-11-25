@@ -2,17 +2,15 @@ interface ProductCardProps {
     image: string,
     title: string,
     price: number,
-    description: string,
 }
 
 
-export default function ProductCard({ image, title, price, description }: ProductCardProps) {
+export default function ProductCard({ image, title, price,}: ProductCardProps) {
     return(
-        <div className='card bg-[#bfbfbf] p-20 w-96 h-[500px] m-10'>
-            <img src={image} alt={title} className='card-image w-72 h-72 object-cover'/>
-            <h2>{title}</h2>
-            <p>{description}</p>
-            <span>${price}</span>
+        <div className='card rounded-[50px] bg-[#bfbfbf] p-12 w-[330px] h-[460px] m-10 '>
+            <img src={image} alt={title} className='card-image w-[230px] h-[280px] object-fit object-center rounded-[25px] p-2'/>
+            <h2 className="title mt-[5px]">{title}</h2>
+            <div  className="price mt-[15px]"><span>${price}</span></div>
         </div>
     )
 }
