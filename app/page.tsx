@@ -1,22 +1,7 @@
 'use client'
-import ProductCard from '../components/ProductCard'
+import ProductCard from './components/ProductCard'
+import SearchBar from './components/Searchbar';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-
-// export default function Home() {
-  
-//   return ( 
-//     <>
-//       <div className='flex justify-between bg-[#ccc9aa]'>
-//         <ProductCard image='remera-negra.jpg' title='Remera negra' price= {5000}  description='Una remera increiblemente negra'/>
-
-//         <ProductCard image='remera-fucsia.jpg' title='Remera fucia' price= {4500}  description='Una remera increiblemente fucsia'/>
-
-//         <ProductCard image='zapatillas-negras.jpeg' title='Zapatillas negras' price= {78000}  description='Un par de zapas que sale lo mismo que un corsa'/>
-//     </div>
-//     </>
-// );
-// }
 
 
 interface Product {
@@ -28,6 +13,7 @@ interface Product {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [searchInput, setSearchInput] = useState<string>('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -38,10 +24,20 @@ export default function Home() {
 
     fetchProducts();
   }, []);
+  
+  
+  const filteredProducts = products.filter((product) => 
+    product.title.toLowerCase().includes(searchInput.toLowerCase())
+  )
+  
+  
   return ( 
     <>
+      <div className='justify-items-center  bg-gray-600'>
+        <SearchBar onSearch={setSearchInput}/>
+      </div>
       <div className='flex flex-wrap justify-between bg-[#cacdca]'>
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <ProductCard
             key={product.id}
             image={product.image}
