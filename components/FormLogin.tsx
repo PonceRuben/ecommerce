@@ -20,6 +20,7 @@ import { loginAction } from "@/actions/auth-actions";
 import { useState } from "react";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { getSession } from "next-auth/react";
 
 const FormLogin = () => {
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,15 @@ const FormLogin = () => {
       if (response.error) {
         setError(response.error); //estos errores no son de cliente, si no del backend y están en el authconfig.ts
       } else {
-        router.push("/dashboard");
+        //Obtener la session después de hacer el login
+        const session = await getSession();
+        if (session?.user.role === "admin") {
+          router.push("/admin-dashboard"); //Redirige al admin dashboard
+        } else if (session?.user.role === "editor") {
+          router.push("editor-dashboard");
+        } else {
+          router.push("/user-dashboard"); // Redirige al dashboard de user
+        }
       }
     });
   }

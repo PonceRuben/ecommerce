@@ -58,6 +58,12 @@ export const registerAction = async (
         name: data.name,
         username: data.username,
         password: passwordHash,
+        // Agregar la relación con el rol por defecto 'user' (id: 2)
+        roles: {
+          create: {
+            roleId: 2, // Asegúrate de que el id 2 sea el del rol 'user'
+          },
+        },
       },
     });
 
