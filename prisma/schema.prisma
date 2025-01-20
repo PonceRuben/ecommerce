@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+model Permission {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  roles Role_Permission[]
+}
+
+model Role_Permission {
+  id          Int        @id @default(autoincrement())
+  roleId      Int
+  permissionId Int
+
+  role        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId]) // Para evitar duplicados de combinaciones role-permission
+}
+
+
+
+
+
+model Role {
+  id          Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  name        String    @unique
+  description String?
+  users       User_Role[]
+  permissions Role_Permission[]
+}
+
+model User_Role {
+  id        Int    @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  userId    Int
+  roleId    Int
+  user      User   @relation(fields: [userId], references: [id])
+  role      Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model User {
+  id            Int           @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  name          String?
+  username      String?        @unique
+  email         String?        @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[]
+  roles         User_Role[]
+}
+
+model Account {
+  id                       Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  userId                   Int
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?  @db.Text
+  access_token             String?  @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?  @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User?    @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  sessionToken String    @unique
+  userId       Int
+  expires      DateTime
+  user         User      @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Verification_Token {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Authenticator {
+  credentialID         Int     @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  userId               Int
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
