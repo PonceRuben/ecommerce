@@ -20,6 +20,13 @@ export default {
           where: {
             email: data.email,
           },
+          include: {
+            roles: {
+              include: {
+                role: true,
+              },
+            },
+          },
         });
         if (!user || !user.password) {
           throw new Error("User wasn't found");
@@ -38,6 +45,7 @@ export default {
           image: user.image,
           emailVerified: user.emailVerified,
           username: user.username,
+          role: user.roles[0]?.role?.name,
         };
       },
     }),

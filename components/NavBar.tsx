@@ -30,7 +30,7 @@ export default function NavBar() {
         {/* Navigation Links */}
         <ul className="flex justify-center gap-8 py-3 bg-[#02333c]">
           <li className="hover:text-[#03424a] transition-colors">
-            <Link href="/categorias/[categoria]" as={`/categorias/ropa`}>
+            <Link href="categories/" as={`categories/general`}>
               Categorías
             </Link>
           </li>

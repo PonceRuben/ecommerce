@@ -1,29 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
+import { IncomingForm } from "formidable";
+import fs from "fs";
+import path from "path";
+
+// Configurar formidable
+const form = new IncomingForm({
+  // Configuración del directorio de carga
+  uploadDir: path.join(process.cwd(), "public/images/products"),
+  // Permitir el mantenimiento de las extensiones del archivo
+  keepExtensions: true,
+  // Limitar el tamaño del archivo cargado
+  maxFileSize: 10 * 1024 * 1024, // 10 MB
+  filename: (name, ext, part, form) => {
+    // Crear un nombre único para el archivo
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    return `${uniqueSuffix}${ext}`;
+  },
+});
+
+export const config = {
+  api: {
+    bodyParser: false, // Desactivar el parser de cuerpo de Next.js
+  },
+};
 
 interface Product {
   id: number;
   name: string;
   description: string;
   price: number;
-  image: string | null; // Añadimos este campo que falta
+  image: string | null;
 }
 
 type Response = {
   message: string;
-  data: Product[];
+  data: Product[] | Product;
 };
 
 export async function GET(req: NextRequest) {
   try {
-    //Obtener productos de la db
     const products = await prisma.product.findMany({
       include: {
         category: true,
       },
     });
 
-    // Mapeamos los productos para devolver solo los campos que queremos en el frontend
     const mappedProducts = products.map((product) => ({
       id: product.id,
       name: product.name,
@@ -47,152 +69,133 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const form = new IncomingForm();
+    const reqAsAny: any = req;
 
-    if (
-      !body.name ||
-      !body.price ||
-      typeof body.name !== "string" ||
-      typeof body.price !== "number"
-    ) {
-      return NextResponse.json({ message: "Datos inválidos" }, { status: 400 });
-    }
+    return new Promise((resolve, reject) => {
+      form.parse(reqAsAny, async (err: any, fields: any, files: any) => {
+        if (err) {
+          console.error("Error al procesar el formulario:", err);
+          return resolve(
+            NextResponse.json(
+              { error: "Error processing form" },
+              { status: 500 }
+            )
+          );
+        }
 
-    const newProduct: Product = {
-      id: productos.length > 0 ? productos[productos.length - 1].id + 1 : 1,
-      name: body.name,
-      price: body.price,
-    };
+        const { name, description, price, stock, categoryId } = fields;
 
-    productos.push(newProduct);
+        // Accede a files solo dentro del callback
+        const imageFile = files?.image?.filepath;
 
-    return NextResponse.json(
-      { message: "Producto creado con éxito", data: newProduct },
-      { status: 201 }
-    );
+        if (!imageFile) {
+          return resolve(
+            NextResponse.json({ error: "No image provided" }, { status: 400 })
+          );
+        }
+
+        const imagePath = `/images/products/${path.basename(imageFile)}`;
+
+        // Procesa los datos aquí según tus necesidades
+        return resolve(
+          NextResponse.json({
+            message: "Producto agregado correctamente",
+            imageUrl: imagePath,
+          })
+        );
+      });
+    });
   } catch (error) {
-    console.error("Error al crear el producto:", error);
+    console.error("Error en la carga de archivos:", error);
     return NextResponse.json(
-      { message: "Hubo un error al crear el producto" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(req: NextRequest) {
-  try {
-    // Obtener el id del producto desde los parámetros de la URL
-    const id = req.nextUrl.searchParams.get("id");
+// export async function PUT(req: NextRequest) {
+//   try {
+//     const id = req.nextUrl.searchParams.get("id");
 
-    // Verificar que el id no sea null y convertirlo a número
-    if (!id || isNaN(Number(id))) {
-      return NextResponse.json(
-        { message: "ID inválido o no proporcionado" },
-        { status: 400 }
-      );
-    }
+//     if (!id || isNaN(Number(id))) {
+//       return NextResponse.json(
+//         { message: "ID inválido o no proporcionado" },
+//         { status: 400 }
+//       );
+//     }
 
-    // Leer los datos enviados en el cuerpo de la solicitud
-    const body = await req.json();
+//     const body = await req.json();
 
-    // Validar que el cuerpo contiene las propiedades necesarias
-    if (
-      !body.name ||
-      !body.price ||
-      typeof body.name !== "string" ||
-      typeof body.price !== "number"
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "Datos inválidos. Se requiere 'name' (string) y 'price' (number).",
-        },
-        { status: 400 }
-      );
-    }
+//     if (
+//       !body.name ||
+//       !body.price ||
+//       typeof body.name !== "string" ||
+//       typeof body.price !== "number"
+//     ) {
+//       return NextResponse.json(
+//         {
+//           message:
+//             "Datos inválidos. Se requiere 'name' (string) y 'price' (number).",
+//         },
+//         { status: 400 }
+//       );
+//     }
 
-    // Buscar el producto por id
-    const productIndex = productos.findIndex(
-      (producto) => producto.id === parseInt(id)
-    );
+//     const updatedProduct = await prisma.product.update({
+//       where: { id: Number(id) },
+//       data: {
+//         name: body.name,
+//         price: body.price,
+//       },
+//     });
 
-    // Si el producto no se encuentra, devolver un error
-    if (productIndex === -1) {
-      return NextResponse.json(
-        { message: "Producto no encontrado" },
-        { status: 404 }
-      );
-    }
+//     return NextResponse.json(
+//       {
+//         message: "Producto actualizado con éxito",
+//         data: updatedProduct,
+//       },
+//       { status: 200 }
+//     );
+//   } catch (error) {
+//     console.error("Error al actualizar el producto:", error);
+//     return NextResponse.json(
+//       { message: "Hubo un error al actualizar el producto" },
+//       { status: 500 }
+//     );
+//   }
+// }
 
-    // Actualizar el producto encontrado
-    productos[productIndex] = {
-      id: parseInt(id), // El id no cambia
-      name: body.name,
-      price: body.price,
-    };
+// export async function DELETE(req: NextRequest) {
+//   try {
+//     const id = req.nextUrl.searchParams.get("id");
 
-    // Responder con el producto actualizado
-    return NextResponse.json(
-      {
-        message: "Producto actualizado con éxito",
-        data: productos[productIndex],
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    // Manejo de errores
-    console.error("Error al actualizar el producto:", error);
-    return NextResponse.json(
-      { message: "Hubo un error al actualizar el producto" },
-      { status: 500 }
-    );
-  }
-}
+//     if (!id || isNaN(Number(id))) {
+//       return NextResponse.json(
+//         { message: "ID inválido o no proporcionado" },
+//         { status: 400 }
+//       );
+//     }
 
-export async function DELETE(req: NextRequest) {
-  try {
-    // Obtener el id del producto desde los parámetros de consulta
-    const id = req.nextUrl.searchParams.get("id");
+//     const productId = parseInt(id, 10);
 
-    // Validar el id
-    if (!id || isNaN(Number(id))) {
-      return NextResponse.json(
-        { message: "ID inválido o no proporcionado" },
-        { status: 400 }
-      );
-    }
+//     const deletedProduct = await prisma.product.delete({
+//       where: { id: productId },
+//     });
 
-    const productId = parseInt(id, 10); // Convertir id a número
-
-    // Buscar el índice del producto
-    const productIndex = productos.findIndex(
-      (producto) => producto.id === productId
-    );
-
-    // Si no se encuentra el producto
-    if (productIndex === -1) {
-      return NextResponse.json(
-        { message: "Producto no encontrado" },
-        { status: 404 }
-      );
-    }
-
-    // Eliminar el producto
-    const deletedProduct = productos.splice(productIndex, 1)[0]; // Elimina y devuelve el producto
-
-    // Respuesta exitosa
-    return NextResponse.json(
-      {
-        message: "Producto eliminado correctamente",
-        data: deletedProduct,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error al procesar la solicitud DELETE:", error);
-    return NextResponse.json(
-      { message: "Error al procesar la solicitud" },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       {
+//         message: "Producto eliminado correctamente",
+//         data: deletedProduct,
+//       },
+//       { status: 200 }
+//     );
+//   } catch (error) {
+//     console.error("Error al procesar la solicitud DELETE:", error);
+//     return NextResponse.json(
+//       { message: "Error al procesar la solicitud" },
+//       { status: 500 }
+//     );
+//   }
+// }

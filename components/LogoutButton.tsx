@@ -13,7 +13,9 @@ const LogoutButton = () => {
 
   return (
     <div>
-      <Button onClick={handleClick}>LogOut</Button>
+      <Button onClick={handleClick} variant="logout">
+        Cerrar Sesión
+      </Button>
     </div>
   );
 };

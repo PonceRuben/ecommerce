@@ -35,7 +35,6 @@ export default function Home() {
       </div>
       <div className="bg-[#cacdca] min-h-screen">
         {" "}
-        {/* Asegura el fondo gris incluso cuando no haya productos */}
         {/* Título del Catálogo */}
         <div className="flex justify-center py-6">
           <h1 className="text-4xl font-bold text-[#02242d] text-center shadow-lg">
