@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
       description: product.description,
       price: product.price,
       image: product.image,
+      category: product.category?.name,
     }));
 
     return NextResponse.json<Response>(
@@ -69,47 +70,80 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const form = new IncomingForm();
-    const reqAsAny: any = req;
+    // Obtener el cuerpo de la solicitud como texto
+    const body = await req.text();
+    const boundary = req.headers.get("content-type")?.split("boundary=")[1];
 
-    return new Promise((resolve, reject) => {
-      form.parse(reqAsAny, async (err: any, fields: any, files: any) => {
-        if (err) {
-          console.error("Error al procesar el formulario:", err);
-          return resolve(
-            NextResponse.json(
-              { error: "Error processing form" },
-              { status: 500 }
-            )
+    if (!boundary) {
+      return NextResponse.json({ error: "No boundary found" }, { status: 400 });
+    }
+
+    // Dividir el cuerpo en partes usando el boundary
+    const parts = body.split(`--${boundary}`).filter(Boolean);
+
+    let productData: any = {};
+    let imageUrl: string | null = null;
+
+    for (let part of parts) {
+      if (part.includes("Content-Disposition")) {
+        const contentDisposition = part.split("\r\n")[1];
+        const fieldName = contentDisposition.split('name="')[1]?.split('"')[0];
+
+        if (part.includes("filename")) {
+          // Es un archivo, procesarlo
+          const filename = part
+            .split("filename=")[1]
+            ?.split("\r\n")[0]
+            .trim()
+            .replace(/"/g, "");
+          const fileContent = part.split("\r\n\r\n")[1].split("\r\n--")[0];
+          const filePath = path.join(
+            process.cwd(),
+            "public",
+            "images",
+            "products",
+            filename
           );
+
+          // Guardar archivo en el sistema
+          fs.writeFileSync(filePath, fileContent, "binary");
+
+          imageUrl = `images/products/${filename}`;
+        } else {
+          // Es un campo de formulario (texto, número, etc.)
+          const fieldValue = part.split("\r\n\r\n")[1].split("\r\n--")[0];
+          productData[fieldName] = fieldValue;
         }
+      }
+    }
 
-        const { name, description, price, stock, categoryId } = fields;
-
-        // Accede a files solo dentro del callback
-        const imageFile = files?.image?.filepath;
-
-        if (!imageFile) {
-          return resolve(
-            NextResponse.json({ error: "No image provided" }, { status: 400 })
-          );
-        }
-
-        const imagePath = `/images/products/${path.basename(imageFile)}`;
-
-        // Procesa los datos aquí según tus necesidades
-        return resolve(
-          NextResponse.json({
-            message: "Producto agregado correctamente",
-            imageUrl: imagePath,
-          })
-        );
+    // Guardar producto en la base de datos
+    if (productData.name && productData.price && imageUrl) {
+      const newProduct = await prisma.product.create({
+        data: {
+          name: productData.name,
+          description: productData.description,
+          price: parseFloat(productData.price),
+          stock: parseInt(productData.stock, 10),
+          image: imageUrl,
+          categoryId: parseInt(productData.categoryId, 10),
+        },
       });
-    });
+
+      return NextResponse.json({
+        message: "Producto agregado con éxito",
+        data: newProduct,
+      });
+    } else {
+      return NextResponse.json(
+        { error: "Faltan datos del producto" },
+        { status: 400 }
+      );
+    }
   } catch (error) {
-    console.error("Error en la carga de archivos:", error);
+    console.error("Error al procesar la solicitud:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Error interno del servidor" },
       { status: 500 }
     );
   }

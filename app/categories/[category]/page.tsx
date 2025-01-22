@@ -2,16 +2,33 @@ import productType from "@/app/types/products";
 import ProductCard from "../../../components/ProductCard";
 import Link from "next/link";
 
-export default async function Categoria({
+export default async function Category({
   params, //esto es la categoria que voy a recibir, es decir, en la URL(lo que esta entre corchetes)
 }: {
-  params: { categoria: string }; //aca estoy diciendo que ese param va a ser una categoria qu es un stream
+  params: { category: string }; //aca estoy diciendo que ese param va a ser una categoria qu es un stream
 }) {
-  const categoria = decodeURIComponent(params.categoria); // Decodifica la categoría
-  const response = await fetch("https://fakestoreapi.com/products", {
+  const res = await params; // Resuelve la Promise
+
+  const categoria = decodeURIComponent(res.category || ""); // Decodifica la categoría
+  console.log("Categoría recibida desde la URL:", categoria);
+
+  if (!categoria) {
+    return <div>No se ha recibido ninguna categoría válida.</div>;
+  }
+
+  const response = await fetch(`http://localhost:3000/api/products`, {
     cache: "no-store", // Asegura que la solicitud no se almacene en caché
   }); // el fetch hace la peticion y me devuelve un json
-  const products: productType[] = await response.json(); // agregamos productType como unu tipo en la carpeta types y el response.json convierte el json a un objeto
+
+  if (!response.ok) {
+    // Maneja errores en la solicitud
+    console.error("Error al obtener los productos");
+    return <div>Error al cargar los productos.</div>;
+  }
+
+  const jsonResponse = await response.json();
+  const products: productType[] = jsonResponse.data;
+  console.log(products);
 
   const filteredProducts = products.filter(
     (product) => product.category === categoria
@@ -23,7 +40,7 @@ export default async function Categoria({
         <h1>Categorías</h1>
         <ul>
           <li>
-            <Link href="/categorias/men's clothing">Men's Clothing</Link>
+            <Link href="/categories/ropa-de-hombre">Ropa de hombre</Link>
             {/*aca estoy diciendo que la categoria que tiene que ser igual al category traido del producto tiene que ser men's clothing */}
           </li>
           <li>
@@ -43,8 +60,12 @@ export default async function Categoria({
           {filteredProducts.map((product: any) => (
             <ProductCard
               key={product.id}
-              image={product.image}
-              title={product.title}
+              image={
+                product.image
+                  ? `/images/products/${product.image}`
+                  : "/images/default-image.jpg"
+              }
+              title={product.name}
               price={product.price}
             />
           ))}
