@@ -2,11 +2,20 @@ interface ProductCardProps {
   image: string;
   title: string;
   price: number;
+  onClick?: () => void;
 }
 
-export default function ProductCard({ image, title, price }: ProductCardProps) {
+export default function ProductCard({
+  image,
+  title,
+  price,
+  onClick,
+}: ProductCardProps) {
   return (
-    <div className="rounded-[25px] bg-[#02242d] p-6 w-full max-w-[350px] h-auto shadow-lg hover:shadow-2xl transition-shadow duration-300 my-8">
+    <div
+      className="rounded-[25px] bg-[#02242d] p-6 w-full max-w-[350px] h-auto shadow-lg hover:shadow-2xl hover:scale-105 transform transition-transform duration-300 my-8 cursor-pointer"
+      onClick={onClick}
+    >
       {/* Product Image */}
       <div className="w-full h-[250px] overflow-hidden rounded-[20px] border-2 border-[#03424a] shadow-md">
         <img

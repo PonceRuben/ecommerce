@@ -1,6 +1,3 @@
-import productType from "@/app/types/products";
-import Link from "next/link";
-
 export default async function Product({
   params,
 }: {
@@ -8,10 +5,12 @@ export default async function Product({
 }) {
   const productId = params.product;
 
-  console.log("Id del producto:", productId);
-
   if (!productId) {
-    return <div>No se ha recibido ningún ID válido.</div>;
+    return (
+      <div className="text-center text-red-500">
+        No se ha recibido ningún ID válido.
+      </div>
+    );
   }
 
   // Realiza la petición para obtener los datos del producto
@@ -21,51 +20,63 @@ export default async function Product({
       cache: "no-store", // No almacena en caché
     }
   );
-  console.log("Estado de la respuesta:", response.status);
 
   if (!response.ok) {
     console.error("Error en el fetch:", response.statusText);
-    return <div>Error al obtener los datos del producto.</div>;
+    return (
+      <div className="text-center text-red-500">
+        Error al obtener los datos del producto.
+      </div>
+    );
   }
 
   const responseData = await response.json();
   const product = responseData.data;
-  console.log("Producto obtenido", product);
 
   return (
-    <div className="bg-[#f4f4f4] min-h-screen">
+    <div className="bg-[#f0f4f8] min-h-screen py-12">
       {/* Título del Producto */}
-      <div className="flex justify-center py-6">
-        <h1 className="text-4xl font-extrabold text-[#02242d] text-center shadow-md">
+      <div className="flex justify-center py-8">
+        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#02242d] to-[#03424a] text-center shadow-xl tracking-tight">
           {product.name}
         </h1>
       </div>
 
       {/* Detalles del Producto */}
-      <div className="flex justify-center gap-10 px-6 py-8">
+      <div className="flex justify-center gap-12 px-6 py-10">
         {/* Imagen del Producto */}
-        <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="w-full h-[400px] overflow-hidden rounded-xl border border-[#03424a] shadow-lg">
+        <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl hover:shadow-3xl overflow-hidden transition-transform transform hover:scale-105">
+          <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
             <img
               src={`/${product.image}`}
               alt={product.name}
-              className="w-full h-full object-cover object-center transition-transform transform hover:scale-105"
+              className="w-full h-full object-cover object-center"
             />
           </div>
         </div>
 
         {/* Descripción y Precio */}
-        <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-          <p className="text-lg text-gray-700 mt-2">{product.description}</p>
-          <div className="flex justify-between items-center mt-6">
+        <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl hover:shadow-3xl space-y-6">
+          <p className="text-xl text-gray-700">{product.description}</p>{" "}
+          {/* Aumenté el tamaño de la descripción */}
+          <div className="flex flex-col justify-between items-start space-y-3">
+            {" "}
+            {/* Cambié el layout para poner el stock abajo */}
             <p className="text-3xl font-bold text-[#02242d]">
-              ${product.price}
+              Precio: ${product.price}
             </p>
-            {/* Botón de Añadir al Carrito */}
-            <button className="px-6 py-3 bg-[#03424a] text-white rounded-full hover:bg-[#02242d] transition-colors duration-300">
-              Añadir al carrito
-            </button>
+            {/* Mostrar stock */}
+            <p className="text-lg text-gray-500">
+              <span className="font-semibold text-gray-700">
+                Stock disponible:
+              </span>{" "}
+              {product.stock}
+            </p>
           </div>
+          {/* Botón de Añadir al Carrito */}
+          <button className="w-full py-3 bg-[#03424a] text-white rounded-full shadow-md hover:shadow-xl hover:bg-[#02242d] transition-all duration-300">
+            Añadir al carrito
+          </button>
         </div>
       </div>
     </div>

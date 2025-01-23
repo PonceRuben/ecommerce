@@ -2,6 +2,7 @@
 import ProductCard from "../components/ProductCard";
 import SearchBar from "../components/Searchbar";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: number;
@@ -13,6 +14,8 @@ interface Product {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchInput, setSearchInput] = useState<string>("");
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -27,6 +30,10 @@ export default function Home() {
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchInput.toLowerCase())
   );
+
+  const handleProductClick = (id: number) => {
+    router.push(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`);
+  };
 
   return (
     <>
@@ -60,6 +67,7 @@ export default function Home() {
                 }
                 title={product.name}
                 price={product.price}
+                onClick={() => handleProductClick(product.id)}
               />
             ))
           )}

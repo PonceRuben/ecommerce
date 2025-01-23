@@ -31,6 +31,7 @@ export async function GET(
       price: product.price,
       image: product.image,
       category: product.category?.name,
+      stock: product.stock,
     };
 
     return NextResponse.json(

@@ -1,7 +1,12 @@
+"use client";
 import { FaSearch } from "react-icons/fa";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import LogoutButton from "./LogoutButton";
+import DashboardButton from "./DashboardButton";
 
 export default function NavBar() {
+  const { data: session } = useSession();
   return (
     <>
       <nav
@@ -28,24 +33,44 @@ export default function NavBar() {
         </div>
 
         {/* Navigation Links */}
-        <ul className="flex justify-center gap-8 py-3 bg-[#02333c]">
-          <li className="hover:text-[#03424a] transition-colors">
-            <Link href="categories/" as={`categories/general`}>
+        <ul className="flex justify-center gap-8 py-3 bg-[#02333c] items-center">
+          <li className="hover:text-[#03424a] transition-colors flex items-center">
+            <Link href="/categories/general" as="/categories/general">
               Categorías
             </Link>
           </li>
-          <li className="hover:text-[#03424a] transition-colors">
+          <li className="hover:text-[#03424a] transition-colors flex items-center">
             Métodos de pago
           </li>
-          <li className="hover:text-[#03424a] transition-colors">Envíos</li>
-          <li className="hover:text-[#03424a] transition-colors">Ofertas</li>
-          <li className="hover:text-[#03424a] transition-colors">Favoritos</li>
-          <li className="hover:text-[#03424a] transition-colors">
-            <Link href="/login">Login</Link>
+          <li className="hover:text-[#03424a] transition-colors flex items-center">
+            Envíos
           </li>
-          <li className="hover:text-[#03424a] transition-colors">
-            <Link href="/register">Register</Link>
+          <li className="hover:text-[#03424a] transition-colors flex items-center">
+            Ofertas
           </li>
+          {!session && (
+            <>
+              <li className="hover:text-[#03424a] transition-colors flex items-center">
+                <Link href="/login">Login</Link>
+              </li>
+              <li className="hover:text-[#03424a] transition-colors flex items-center">
+                <Link href="/register">Register</Link>
+              </li>
+            </>
+          )}
+          {session && (
+            <>
+              <li className="hover:text-[#03424a] transition-colors flex items-center">
+                <Link href="/cart">Ir al carrito</Link>
+              </li>
+              <li>
+                <DashboardButton />
+              </li>
+              <li className="flex items-center">
+                <LogoutButton />
+              </li>
+            </>
+          )}
         </ul>
       </nav>
     </>
