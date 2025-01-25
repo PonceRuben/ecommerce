@@ -6,9 +6,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Obtenemos el ID desde los parámetros de la URL
-    const productId = parseInt(params.id); // Asegúrate de convertir el ID a un número si es necesario
+    // Esperamos a que los parámetros sean resueltos correctamente
+    const { id } = params;
+    const productId = parseInt(id); // Asegúrate de convertir el ID a un número
+
     console.log("ID recibido en la API:", productId);
+
     // Buscamos el producto por ID
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -39,7 +42,7 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error al obtener el producto");
+    console.error("Error al obtener el producto", error);
     return NextResponse.json(
       { message: "Hubo un error al obtener el producto" },
       { status: 500 }

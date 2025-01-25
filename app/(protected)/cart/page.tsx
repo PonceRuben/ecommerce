@@ -16,11 +16,11 @@ export default function CartPage() {
     0
   );
 
-  const handleRemove = (id: string) => {
+  const handleRemove = (id: number) => {
     removeFromCart(id); // Llamada para eliminar el producto del carrito
   };
 
-  const handleUpdateQuantity = (id: string, quantity: number) => {
+  const handleUpdateQuantity = (id: number, quantity: number) => {
     updateQuantity(id, quantity); // Llamada para actualizar la cantidad del producto
   };
 
@@ -41,7 +41,7 @@ export default function CartPage() {
               className="flex justify-between items-center bg-white p-4 rounded-lg shadow-lg"
             >
               <img
-                src={`/${item.image}`}
+                src={item.image}
                 alt={item.name}
                 className="w-16 h-16 object-cover"
               />

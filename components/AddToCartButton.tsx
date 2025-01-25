@@ -2,10 +2,12 @@
 
 import { useCart } from "../app/context/CartContext";
 import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type AddToCartButtonProps = {
   product: {
-    id: string;
+    id: number;
     name: string;
     description: string;
     price: number;
@@ -18,8 +20,15 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   const { addToCart } = useCart(); // Accede a la función addToCart del contexto
   const [isAdding, setIsAdding] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
+  const { data: session } = useSession(); // Hook para verificar la sesión
+  const router = useRouter();
 
   const handleAddToCart = () => {
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
     setIsAdding(true); // Cambia el estado a "Añadiendo"
     addToCart({
       ...product,

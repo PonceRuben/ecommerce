@@ -59,11 +59,7 @@ export default function Home() {
               <ProductCard
                 key={product.id}
                 image={
-                  product.image
-                    ? `${process.env.NEXT_PUBLIC_BASE_URL || ""}/${
-                        product.image
-                      }`
-                    : "/images/default-image.jpg"
+                  product.image ? product.image : "/images/default-image.jpg"
                 }
                 title={product.name}
                 price={product.price}
