@@ -4,6 +4,7 @@ import "./globals.css";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
 import { SessionProvider } from "next-auth/react";
+import { CartProvider } from "../app/context/CartContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -32,8 +33,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <SessionProvider>
-          <NavBar />
-          <main className="flex-grow">{children}</main> <Footer />
+          <CartProvider>
+            <NavBar />
+            <main className="flex-grow">{children}</main> <Footer />
+          </CartProvider>
         </SessionProvider>
       </body>
     </html>

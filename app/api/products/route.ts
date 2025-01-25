@@ -1,23 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { IncomingForm } from "formidable";
-import fs from "fs";
-import path from "path";
+import { Storage } from "@google-cloud/storage";
 
-// Configurar formidable
-const form = new IncomingForm({
-  // Configuración del directorio de carga
-  uploadDir: path.join(process.cwd(), "public/images/products"),
-  // Permitir el mantenimiento de las extensiones del archivo
-  keepExtensions: true,
-  // Limitar el tamaño del archivo cargado
-  maxFileSize: 10 * 1024 * 1024, // 10 MB
-  filename: (name, ext, part, form) => {
-    // Crear un nombre único para el archivo
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    return `${uniqueSuffix}${ext}`;
-  },
+// Configurar Google Cloud Storage
+const storage = new Storage({
+  keyFilename: "concrete-zephyr-448817-t6-7e930e1aa9e3.json",
 });
+const bucket = storage.bucket("ecommerce-product-images-ruben-ponce");
 
 export const config = {
   api: {
@@ -88,7 +77,7 @@ export async function POST(req: NextRequest) {
       if (part.includes("Content-Disposition")) {
         const contentDisposition = part.split("\r\n")[1];
         const fieldName = contentDisposition.split('name="')[1]?.split('"')[0];
-
+        console.log("La part es", part);
         if (part.includes("filename")) {
           // Es un archivo, procesarlo
           const filename = part
@@ -96,25 +85,82 @@ export async function POST(req: NextRequest) {
             ?.split("\r\n")[0]
             .trim()
             .replace(/"/g, "");
-          const fileContent = part.split("\r\n\r\n")[1].split("\r\n--")[0];
-          const filePath = path.join(
-            process.cwd(),
-            "public",
-            "images",
-            "products",
-            filename
+          const fileContent = part.split("\r\n\r\n")[1];
+          const cleanFileContent = fileContent.slice(
+            0,
+            fileContent.lastIndexOf("\r\n--")
           );
+          console.log("File content es: ", fileContent);
 
-          // Guardar archivo en el sistema
-          fs.writeFileSync(filePath, fileContent, "binary");
+          // Subir el archivo directamente a Google Cloud Storage
+          const gcpFilePath = `products/${filename}`;
+          const file = bucket.file(gcpFilePath);
 
-          imageUrl = `images/products/${filename}`;
+          const buffer = Buffer.from(cleanFileContent, "binary"); // Convertimos el archivo a buffer
+          console.log("Buffer length:", buffer.length);
+          // Subir el archivo a GCS
+          await file.save(buffer, {
+            resumable: false,
+            public: true,
+          });
+
+          // Obtener la URL pública del archivo en GCP
+          imageUrl = `https://storage.googleapis.com/${bucket.name}/${gcpFilePath}`;
+          console.log("Generated Image URL:", imageUrl);
         } else {
-          // Es un campo de formulario (texto, número, etc.)
           const fieldValue = part.split("\r\n\r\n")[1].split("\r\n--")[0];
           productData[fieldName] = fieldValue;
         }
       }
+    }
+
+    // Validaciones de los datos
+    if (
+      !productData.name ||
+      typeof productData.name !== "string" ||
+      productData.name.trim() === ""
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "El nombre del producto es obligatorio y debe ser un texto válido",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !productData.price ||
+      isNaN(parseFloat(productData.price)) ||
+      parseFloat(productData.price) <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "El precio del producto es obligatorio y debe ser un número mayor que cero",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (productData.stock && isNaN(parseInt(productData.stock, 10))) {
+      return NextResponse.json(
+        { error: "El stock debe ser un número válido" },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !productData.categoryId ||
+      isNaN(parseInt(productData.categoryId, 10))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "El ID de la categoría es obligatorio y debe ser un número válido",
+        },
+        { status: 400 }
+      );
     }
 
     // Guardar producto en la base de datos
@@ -148,88 +194,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-// export async function PUT(req: NextRequest) {
-//   try {
-//     const id = req.nextUrl.searchParams.get("id");
-
-//     if (!id || isNaN(Number(id))) {
-//       return NextResponse.json(
-//         { message: "ID inválido o no proporcionado" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const body = await req.json();
-
-//     if (
-//       !body.name ||
-//       !body.price ||
-//       typeof body.name !== "string" ||
-//       typeof body.price !== "number"
-//     ) {
-//       return NextResponse.json(
-//         {
-//           message:
-//             "Datos inválidos. Se requiere 'name' (string) y 'price' (number).",
-//         },
-//         { status: 400 }
-//       );
-//     }
-
-//     const updatedProduct = await prisma.product.update({
-//       where: { id: Number(id) },
-//       data: {
-//         name: body.name,
-//         price: body.price,
-//       },
-//     });
-
-//     return NextResponse.json(
-//       {
-//         message: "Producto actualizado con éxito",
-//         data: updatedProduct,
-//       },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     console.error("Error al actualizar el producto:", error);
-//     return NextResponse.json(
-//       { message: "Hubo un error al actualizar el producto" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function DELETE(req: NextRequest) {
-//   try {
-//     const id = req.nextUrl.searchParams.get("id");
-
-//     if (!id || isNaN(Number(id))) {
-//       return NextResponse.json(
-//         { message: "ID inválido o no proporcionado" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const productId = parseInt(id, 10);
-
-//     const deletedProduct = await prisma.product.delete({
-//       where: { id: productId },
-//     });
-
-//     return NextResponse.json(
-//       {
-//         message: "Producto eliminado correctamente",
-//         data: deletedProduct,
-//       },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     console.error("Error al procesar la solicitud DELETE:", error);
-//     return NextResponse.json(
-//       { message: "Error al procesar la solicitud" },
-//       { status: 500 }
-//     );
-//   }
-// }

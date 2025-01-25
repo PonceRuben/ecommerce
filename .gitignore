@@ -38,3 +38,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# gcp
+concrete-zephyr-448817-t6-7e930e1aa9e3.json

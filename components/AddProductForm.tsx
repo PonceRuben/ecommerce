@@ -21,6 +21,7 @@ const AddProductForm = () => {
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch categories
   useEffect(() => {
@@ -82,6 +83,17 @@ const AddProductForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    if (
+      !product.name ||
+      !product.price ||
+      !product.stock ||
+      !product.categoryId ||
+      !product.image
+    ) {
+      setError("Por favor, completa todos los campos");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", product.name);
@@ -98,9 +110,11 @@ const AddProductForm = () => {
       body: formData,
     });
 
+    setLoading(false);
     if (res.ok) {
       router.push("/editor-dashboard");
     } else {
+      setError("Error al agregar el producto");
       console.error("Error al agregar el producto");
     }
   };
@@ -111,6 +125,13 @@ const AddProductForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {loading && (
+        <div className="flex justify-center items-center space-x-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <span>Cargando...</span>
+        </div>
+      )}
+
       <div>
         <label
           htmlFor="name"
@@ -218,7 +239,7 @@ const AddProductForm = () => {
           ))}
         </select>
       </div>
-
+      {error && <div className="text-red-500">{error}</div>}
       <div>
         <Button type="submit">Agregar Producto</Button>
       </div>

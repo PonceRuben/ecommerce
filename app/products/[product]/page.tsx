@@ -1,3 +1,5 @@
+import AddToCartButton from "@/components/AddToCartButton";
+
 export default async function Product({
   params,
 }: {
@@ -74,9 +76,7 @@ export default async function Product({
             </p>
           </div>
           {/* Botón de Añadir al Carrito */}
-          <button className="w-full py-3 bg-[#03424a] text-white rounded-full shadow-md hover:shadow-xl hover:bg-[#02242d] transition-all duration-300">
-            Añadir al carrito
-          </button>
+          <AddToCartButton product={product} />
         </div>
       </div>
     </div>
