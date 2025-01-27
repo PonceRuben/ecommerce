@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { Storage } from "@google-cloud/storage";
+import Busboy from "busboy";
+import { Readable } from "stream";
 
 // Configurar Google Cloud Storage
 const storage = new Storage({
@@ -59,133 +61,137 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Obtener el cuerpo de la solicitud como texto
-    const body = await req.text();
-    const boundary = req.headers.get("content-type")?.split("boundary=")[1];
-
-    if (!boundary) {
-      return NextResponse.json({ error: "No boundary found" }, { status: 400 });
+    const contentType = req.headers.get("content-type") || "";
+    if (!contentType.includes("multipart/form-data")) {
+      return NextResponse.json(
+        { error: "Invalid Content-Type. Expected multipart/form-data" },
+        { status: 400 }
+      );
     }
 
-    // Dividir el cuerpo en partes usando el boundary
-    const parts = body.split(`--${boundary}`).filter(Boolean);
+    const busboy = Busboy({ headers: { "content-type": contentType } });
 
     let productData: any = {};
     let imageUrl: string | null = null;
 
-    for (let part of parts) {
-      if (part.includes("Content-Disposition")) {
-        const contentDisposition = part.split("\r\n")[1];
-        const fieldName = contentDisposition.split('name="')[1]?.split('"')[0];
-        console.log("La part es", part);
-        if (part.includes("filename")) {
-          // Es un archivo, procesarlo
-          const filename = part
-            .split("filename=")[1]
-            ?.split("\r\n")[0]
-            .trim()
-            .replace(/"/g, "");
-          const fileContent = part.split("\r\n\r\n")[1];
-          const cleanFileContent = fileContent.slice(
-            0,
-            fileContent.lastIndexOf("\r\n--")
+    // Promesa para la carga de archivo
+    const uploadPromise = new Promise<void>((resolve, reject) => {
+      busboy.on("field", (name, value) => {
+        productData[name] = value;
+      });
+
+      busboy.on("file", (_, file, info) => {
+        console.log("Archivo recibido:", info.filename);
+        const { filename, mimeType } = info;
+
+        if (!filename) {
+          console.log("No se ha recibido un archivo.");
+          return reject(
+            NextResponse.json({ error: "Archivo no válido" }, { status: 400 })
           );
-          console.log("File content es: ", fileContent);
+        }
 
-          // Subir el archivo directamente a Google Cloud Storage
-          const gcpFilePath = `products/${filename}`;
-          const file = bucket.file(gcpFilePath);
+        const gcpFilePath = `products/${Date.now()}-${filename}`;
+        const gcpFile = bucket.file(gcpFilePath);
 
-          const buffer = Buffer.from(cleanFileContent, "binary"); // Convertimos el archivo a buffer
-          console.log("Buffer length:", buffer.length);
-          // Subir el archivo a GCS
-          await file.save(buffer, {
-            resumable: false,
-            public: true,
+        console.log(`Subiendo archivo a GCP: ${gcpFilePath}`);
+
+        const stream = gcpFile.createWriteStream({
+          metadata: { contentType: mimeType },
+          resumable: false,
+          public: true,
+        });
+
+        file.pipe(stream);
+
+        stream.on("finish", async () => {
+          imageUrl = `https://storage.googleapis.com/${bucket.name}/${gcpFilePath}`;
+          console.log("Archivo subido exitosamente a GCP");
+          console.log("URL de la imagen:", imageUrl);
+          resolve(); // Resolver la promesa después de que la imagen se haya subido correctamente
+        });
+
+        stream.on("error", (err) => {
+          console.error("Error al subir archivo a GCP:", err);
+          reject(err); // Rechazar la promesa si hubo un error
+        });
+      });
+
+      busboy.on("finish", async () => {
+        console.log("Finish de busboy alcanzado");
+
+        // Esperar que la promesa de la imagen se haya resuelto
+        await uploadPromise;
+
+        // Verifica si la URL se asignó correctamente
+        if (!imageUrl) {
+          console.log("URL de la imagen no asignada.");
+          return reject(
+            NextResponse.json(
+              { error: "Error al procesar la imagen" },
+              { status: 400 }
+            )
+          );
+        }
+
+        console.log("Datos del producto recibidos:", productData);
+        console.log("URL de la imagen:", imageUrl);
+
+        if (!productData.name || !productData.price || !imageUrl) {
+          return reject(
+            NextResponse.json(
+              { error: "Faltan datos del producto" },
+              { status: 400 }
+            )
+          );
+        }
+
+        try {
+          // Crear el producto en la base de datos
+          const newProduct = await prisma.product.create({
+            data: {
+              name: productData.name,
+              description: productData.description,
+              price: parseFloat(productData.price),
+              stock: parseInt(productData.stock, 10),
+              image: imageUrl,
+              categoryId: parseInt(productData.categoryId, 10),
+            },
           });
 
-          // Obtener la URL pública del archivo en GCP
-          imageUrl = `https://storage.googleapis.com/${bucket.name}/${gcpFilePath}`;
-          console.log("Generated Image URL:", imageUrl);
-        } else {
-          const fieldValue = part.split("\r\n\r\n")[1].split("\r\n--")[0];
-          productData[fieldName] = fieldValue;
+          console.log("Producto agregado:", newProduct);
+
+          // Devuelve la respuesta aquí, fuera de la promesa
+          return NextResponse.json({
+            message: "Producto agregado con éxito",
+            data: newProduct,
+          });
+        } catch (error) {
+          console.error("Error al agregar el producto:", error);
+          return NextResponse.json(
+            { error: "Error al agregar el producto" },
+            { status: 500 }
+          );
         }
-      }
-    }
-
-    // Validaciones de los datos
-    if (
-      !productData.name ||
-      typeof productData.name !== "string" ||
-      productData.name.trim() === ""
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "El nombre del producto es obligatorio y debe ser un texto válido",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (
-      !productData.price ||
-      isNaN(parseFloat(productData.price)) ||
-      parseFloat(productData.price) <= 0
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "El precio del producto es obligatorio y debe ser un número mayor que cero",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (productData.stock && isNaN(parseInt(productData.stock, 10))) {
-      return NextResponse.json(
-        { error: "El stock debe ser un número válido" },
-        { status: 400 }
-      );
-    }
-
-    if (
-      !productData.categoryId ||
-      isNaN(parseInt(productData.categoryId, 10))
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "El ID de la categoría es obligatorio y debe ser un número válido",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Guardar producto en la base de datos
-    if (productData.name && productData.price && imageUrl) {
-      const newProduct = await prisma.product.create({
-        data: {
-          name: productData.name,
-          description: productData.description,
-          price: parseFloat(productData.price),
-          stock: parseInt(productData.stock, 10),
-          image: imageUrl,
-          categoryId: parseInt(productData.categoryId, 10),
-        },
       });
+    });
 
-      return NextResponse.json({
-        message: "Producto agregado con éxito",
-        data: newProduct,
-      });
-    } else {
-      return NextResponse.json(
-        { error: "Faltan datos del producto" },
-        { status: 400 }
-      );
-    }
+    // Convierte el ReadableStream de Web API a un Readable Stream de Node.js
+    const nodeStream = Readable.from(req.body as any);
+
+    // Pasa el stream convertido a busboy
+    nodeStream.pipe(busboy);
+
+    // Espera a que se complete la carga
+    await uploadPromise;
+
+    console.log("Promesa de carga completada con éxito.");
+
+    // Si llega aquí y todo ha sido exitoso, se puede devolver la respuesta
+    return NextResponse.json({
+      message: "Producto agregado con éxito",
+      data: productData, // Devolver los datos del producto si no hubo un error
+    });
   } catch (error) {
     console.error("Error al procesar la solicitud:", error);
     return NextResponse.json(
@@ -194,3 +200,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+// Primero lo que hace es chequear el header content-type, si eso falla, tira 400.
+// Despues empieza el proceso de busboy para subir la imagen a GCP y devolver la URL. Si eso falla, tira 500.
+// Se espera a que la imagen se termine de subir con checkImageUrl.
+// Si falta el name, price o foto, tira 400.
+// Si nada de eso falló, crea el producto en tu db. Devuelve 201

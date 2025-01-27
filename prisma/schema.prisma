@@ -6,6 +6,7 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 model Permission {
   id    Int     @id @default(autoincrement())
   name  String  @unique
@@ -20,15 +21,11 @@ model Role_Permission {
   role        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@unique([roleId, permissionId]) // Para evitar duplicados de combinaciones role-permission
+  @@unique([roleId, permissionId])
 }
 
-
-
-
-
 model Role {
-  id          Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  id          Int       @id @default(autoincrement())
   name        String    @unique
   description String?
   users       User_Role[]
@@ -36,7 +33,7 @@ model Role {
 }
 
 model User_Role {
-  id        Int    @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  id        Int    @id @default(autoincrement())
   userId    Int
   roleId    Int
   user      User   @relation(fields: [userId], references: [id])
@@ -46,7 +43,7 @@ model User_Role {
 }
 
 model User {
-  id            Int           @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  id            Int           @id @default(autoincrement())
   name          String?
   username      String?        @unique
   email         String?        @unique
@@ -57,10 +54,12 @@ model User {
   sessions      Session[]
   Authenticator Authenticator[]
   roles         User_Role[]
+  orders        Order[]
+  addresses     Address[]
 }
 
 model Account {
-  id                       Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  id                       Int       @id @default(autoincrement())
   userId                   Int
   type                     String
   provider                 String
@@ -83,7 +82,7 @@ model Account {
 }
 
 model Session {
-  id           Int       @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  id           Int       @id @default(autoincrement())
   sessionToken String    @unique
   userId       Int
   expires      DateTime
@@ -104,7 +103,7 @@ model Verification_Token {
 }
 
 model Authenticator {
-  credentialID         Int     @id @default(autoincrement()) // Cambié a Int y le agregué autoincrement
+  credentialID         Int     @id @default(autoincrement())
   userId               Int
   providerAccountId    String
   credentialPublicKey  String
@@ -133,4 +132,43 @@ model Product {
   category    Category  @relation(fields: [categoryId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
+  orderItems  Order_Item[] 
+}
+
+model Order {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  totalAmount   Float
+  status        String    // Puede ser 'pendiente', 'enviado', 'entregado', etc.
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+
+  orderItems    Order_Item[]
+}
+
+model Order_Item {
+  id          Int       @id @default(autoincrement())
+  orderId     Int
+  productId   Int
+  quantity    Int
+  unitPrice   Float
+
+  order       Order     @relation(fields: [orderId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId]) // Esto asegura que un producto solo pueda aparecer una vez por pedido
+}
+
+model Address {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  line1       String
+  line2       String?
+  city        String
+  postalCode  String
+  country     String
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
 }

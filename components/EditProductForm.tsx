@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DeleteProductButton from "./DeleteProductButton";
 
 interface Product {
   id: number;
@@ -98,8 +99,9 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
       alert("Por favor, complete todos los campos.");
       return;
     }
+
     const body = {
-      id: productId, // Añadimos el ID del producto
+      id: productId,
       name: formData.name,
       description: formData.description,
       price: formData.price,
@@ -137,6 +139,10 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   if (error) {
     return <p>{error}</p>;
   }
+  const handleDeleteSuccess = () => {
+    alert("Producto eliminado con éxito");
+    window.location.reload(); // Aquí puedes redirigir al usuario o actualizar el estado
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -228,6 +234,11 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
               ))}
             </select>
           </div>
+
+          <DeleteProductButton
+            productId={parseInt(productId, 10)}
+            onDeleteSuccess={handleDeleteSuccess}
+          />
 
           <button
             type="submit"

@@ -73,7 +73,9 @@ const AddProductForm = () => {
     const { name, files } = e.target;
 
     if (files && files[0]) {
-      // Guardar el archivo en el estado
+      // Log para verificar que el archivo de imagen se está seleccionando correctamente
+      console.log("Imagen seleccionada:", files[0]);
+
       setProduct((prev) => ({
         ...prev,
         [name]: files[0], // Guardamos el archivo seleccionado
@@ -112,6 +114,7 @@ const AddProductForm = () => {
 
     setLoading(false);
     if (res.ok) {
+      alert("Producto creado con éxito");
       router.push("/editor-dashboard");
     } else {
       setError("Error al agregar el producto");

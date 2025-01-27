@@ -81,20 +81,22 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     let errorMessage = "Hubo un error al actualizar el producto";
 
-    // Asegurarse de que 'error' siempre sea un string
     const errorToLog = error instanceof Error ? error.message : String(error);
 
-    console.error("Error al actualizar el producto:", errorToLog); // Log del error como cadena
+    console.error("Error al actualizar el producto:", errorToLog);
 
     return NextResponse.json(
-      { message: errorMessage, error: errorToLog }, // Asegura que el error sea un string
+      { message: errorMessage, error: errorToLog },
       { status: 500 }
     );
   }
 }
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await req.json();
+    const { id } = params;
 
     if (!id) {
       return NextResponse.json(
@@ -103,8 +105,17 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    const productId = parseInt(id, 10);
+
+    if (isNaN(productId)) {
+      return NextResponse.json(
+        { message: "ID de producto no es válido" },
+        { status: 400 }
+      );
+    }
+
     await prisma.product.delete({
-      where: { id },
+      where: { id: productId },
     });
 
     return NextResponse.json(

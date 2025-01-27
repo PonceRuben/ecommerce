@@ -5,8 +5,9 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import AddProductButton from "@/components/AddProductButton";
 import EditCategoryButton from "@/components/EditCategoryButton";
+import EditRoleButton from "@/components/EditRoleButton";
 
-export default async function AdminPage() {
+export default function AdminPage() {
   const { data: session } = useSession();
 
   if (session?.user?.role !== "admin") {
@@ -40,6 +41,8 @@ export default async function AdminPage() {
               <AddProductButton />
               {/*Editar categoría*/}
               <EditCategoryButton />
+              {/*Editar Rol*/}
+              <EditRoleButton />
             </div>
           </div>
         </nav>
