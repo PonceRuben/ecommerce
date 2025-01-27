@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation"; // Necesitas importar el hook useRouter
+import { useRouter } from "next/navigation";
 
 const AddProductButton = () => {
-  const router = useRouter(); // Usamos useRouter para poder hacer la redirección
+  const router = useRouter();
 
   const handleClick = () => {
-    router.push("add-product"); // Redirige a la página deseada
+    router.push("add-product");
   };
 
   return (

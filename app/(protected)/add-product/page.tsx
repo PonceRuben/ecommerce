@@ -7,7 +7,11 @@ export default async function DashboardPage() {
   if (!session) {
     return <div>Not authenticated</div>;
   } else if (session?.user?.role == "user") {
-    return <div>You're not an editor or admin</div>;
+    return (
+      <div className="text-center text-red-500">
+        No tienes acceso a esta sección.
+      </div>
+    );
   } else
     return (
       <div className="p-6">
