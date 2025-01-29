@@ -1,5 +1,5 @@
 "use client";
-import { FaSearch } from "react-icons/fa";
+
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import LogoutButton from "./LogoutButton";
@@ -18,18 +18,6 @@ export default function NavBar() {
           <h1 className="text-2xl font-bold text-white">
             <Link href="/">Ecommerce</Link>
           </h1>
-
-          {/* Search Bar */}
-          <div className="relative w-96">
-            <input
-              type="text"
-              placeholder="Buscar producto..."
-              className="w-full py-2 px-4 border border-[#02333c] rounded-full bg-[#02242d] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#03424a] focus:border-transparent"
-            />
-            <button className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white hover:text-[#03424a]">
-              <FaSearch />
-            </button>
-          </div>
         </div>
 
         {/* Navigation Links */}
@@ -40,13 +28,7 @@ export default function NavBar() {
             </Link>
           </li>
           <li className="hover:text-[#03424a] transition-colors flex items-center">
-            Métodos de pago
-          </li>
-          <li className="hover:text-[#03424a] transition-colors flex items-center">
-            Envíos
-          </li>
-          <li className="hover:text-[#03424a] transition-colors flex items-center">
-            Ofertas
+            <Link href="/">Catálogo</Link>
           </li>
           {!session && (
             <>

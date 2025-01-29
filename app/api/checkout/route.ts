@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const { cartItems } = await req.json();
-    console.log("Datos recibidos en la API:", cartItems);
+    const { cartItems, userId } = await req.json();
+
+    if (!userId) {
+      throw new Error("No se proporcionó el usuario.");
+    }
 
     // Obtener los IDs del carrito
     const cartItemIds = cartItems.map((item: { id: number }) => item.id);
@@ -39,7 +42,49 @@ export async function POST(req: Request) {
       }
     }
 
-    // Actualizar el stock de los productos
+    const userAddress = await prisma.address.findFirst({
+      where: { userId: userId },
+    });
+
+    if (!userAddress) {
+      const defaultAddress = await prisma.address.create({
+        data: {
+          userId: userId,
+          line1: "Calle Falsa 123",
+          city: "Ciudad Ficticia",
+          country: "Pais Ficticio",
+          line2: "Calle2 Falsa 123",
+          postalCode: "123",
+        },
+      });
+    }
+
+    const totalPrice = cartItems.reduce(
+      (total: any, item: any) => total + item.price * item.quantity,
+      0
+    );
+
+    if (isNaN(totalPrice) || totalPrice <= 0) {
+      throw new Error("El precio total es inválido.");
+    }
+
+    // Crear una nueva orden
+    const order = await prisma.order.create({
+      data: {
+        userId: userId,
+        totalPrice: totalPrice,
+        status: "Completada",
+        addressId: userAddress?.id,
+        orderItems: {
+          create: cartItems.map((items: any) => ({
+            productId: items.id,
+            quantity: items.quantity,
+            unitPrice: items.price,
+          })),
+        },
+      },
+    });
+
     const updateStockPromises = cartItems.map(
       (item: { id: number; quantity: number }) => {
         return prisma.product.update({
@@ -57,7 +102,7 @@ export async function POST(req: Request) {
     await Promise.all(updateStockPromises);
 
     return NextResponse.json(
-      { message: "Compra exitosa, stock actualizado." },
+      { message: "Compra exitosa, stock actualizado.", orderId: order.id },
       { status: 200 }
     );
   } catch (error: any) {

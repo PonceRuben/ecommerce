@@ -12,12 +12,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // jwt() se ejecuta cada vez que se crea o actualiza un token JWT
     async jwt({ token, user }) {
-      if (user) {
+      if (user && user.id) {
+        // Cuando `user` está presente (flujo de inicio de sesión), asigna el ID
+        token.id = typeof user.id === "number" ? user.id : 0;
         const userId = Number(user.id);
+
         if (!isNaN(userId)) {
-          // Buscar el primer rol del usuario en la relación intermedia (User_Role)
+          // Buscar el rol del usuario desde la tabla intermedia
           const userRole = await prisma.user_Role.findFirst({
-            where: { userId: userId }, // Ahora estamos usando un número para la consulta
+            where: { userId: userId },
             select: {
               role: {
                 select: {
@@ -26,22 +29,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             },
           });
-          // Asignar el nombre del rol al token
+          // Asignar el rol al token
           if (userRole) {
             token.role = userRole.role.name;
           }
         }
+      } else if (token.sub) {
+        // Cuando `user` no está disponible (flujo normal), usa el `sub` como ID
+        token.id = Number(token.sub);
       }
       return token;
     },
 
     // session() se utiliza para agregar la información del token a la sesión del usuario
     async session({ session, token }) {
-      // Aquí se obtiene el rol del usuario desde la tabla intermedia
-      session.user.role = token.role; // Se pasa el rol al session.user
+      if (token.id) {
+        // Agrega el ID del token a la sesión del usuario
+        (session.user as { id: number }).id = token.id;
+      }
+
+      // Intenta asignar el rol desde el token
+      session.user.role = token.role;
+
       if (!session.user.role) {
-        // Si el rol no está en el token, lo obtendremos de la base de datos
-        const userId = Number(session.user.id); // Asegúrate de que el userId está en el token
+        // Si el rol no está en el token, busca en la base de datos
+        const userId = Number(session.user.id);
 
         if (!isNaN(userId)) {
           const userRole = await prisma.user_Role.findFirst({
@@ -63,6 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
         }
       }
+
       return session;
     },
   },

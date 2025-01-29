@@ -1,6 +1,7 @@
 import { auth } from "../../../auth";
-import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
+import GoToProfileButton from "@/components/GoToProfileButton";
+import GoToEditProfileButton from "@/components/GoToEditProfileButton";
 
 export default async function UserPage() {
   const session = await auth();
@@ -22,11 +23,7 @@ export default async function UserPage() {
             {/* Opciones de usuario */}
             <div className="flex space-x-4">
               {/* Mi perfil */}
-              <Link href="/user-dashboard/profile">
-                <button className="bg-[#02333c] py-2 px-4 rounded-full hover:bg-[#03424a]">
-                  Mi perfil
-                </button>
-              </Link>
+              <GoToProfileButton />
             </div>
           </div>
         </nav>
@@ -42,12 +39,12 @@ export default async function UserPage() {
               actualizar tu perfil.
             </p>
             <div className="mt-6 flex gap-4">
-              <button className="bg-[#02333c] text-white py-2 px-4 rounded-full hover:bg-[#03424a]">
-                Ver compras
-              </button>
-              <button className="bg-[#02333c] text-white py-2 px-4 rounded-full hover:bg-[#03424a]">
-                Editar perfil
-              </button>
+              <Link href="/user-dashboard/orders">
+                <button className="bg-[#02333c] text-white py-2 px-4 rounded-full hover:bg-[#03424a]">
+                  Ver compras
+                </button>
+              </Link>
+              <GoToEditProfileButton />
             </div>
           </div>
         </main>

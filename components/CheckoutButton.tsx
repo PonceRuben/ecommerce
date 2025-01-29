@@ -1,16 +1,23 @@
 "use client";
 import { useCart } from "../app/context/CartContext";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 type CheckoutButtonProps = {
   totalPrice: number;
 };
 
 export default function CheckoutButton({ totalPrice }: CheckoutButtonProps) {
+  const { data: session } = useSession();
   const { cartItems, clearCart } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCheckout = async () => {
+    if (!session) {
+      alert("Debes iniciar sesión para realizar la compra.");
+      return;
+    }
+
     setIsProcessing(true);
     console.log("Inicio de la solicitud de compra");
 
@@ -20,7 +27,7 @@ export default function CheckoutButton({ totalPrice }: CheckoutButtonProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ cartItems }), // Pasamos el carrito con los productos y cantidades
+        body: JSON.stringify({ cartItems, userId: session.user.id }), // Pasamos el carrito con los productos y cantidades y demás datos para registrar la orden
       });
       console.log("Carrito enviado:", cartItems);
       console.log("Respuesta del servidor:", res);
@@ -33,7 +40,6 @@ export default function CheckoutButton({ totalPrice }: CheckoutButtonProps) {
       // Simula el proceso de compra
       setTimeout(() => {
         alert("Compra realizada con éxito. Gracias por tu compra.");
-
         // Vaciar el carrito después de la compra
         clearCart();
       }, 2000); // Simula un proceso de compra con un retraso de 2 segundos

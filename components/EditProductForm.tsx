@@ -26,8 +26,8 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
     description: "",
     price: 0,
     stock: 0,
-    image: "",
-    categoryId: 0, // Inicializa la categoría
+    image: null as File | null,
+    categoryId: 0,
   });
 
   const [categories, setCategories] = useState<Category[]>([]); // Estado para las categorías
@@ -76,13 +76,31 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   }, [productId]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
+
+    console.log(`Cambio en el campo: ${name} con valor: ${value}`);
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "categoryId" ? Number(value) : value, // Convertimos a número si es "categoryId"
     }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { files } = e.target;
+
+    if (files && files[0]) {
+      console.log("Imagen seleccionada:", files[0]); // Verificar el archivo
+
+      setFormData((prev) => ({
+        ...prev,
+        image: files[0], // Guardamos el archivo en el estado
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,34 +118,36 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
       return;
     }
 
-    const body = {
-      id: productId,
-      name: formData.name,
-      description: formData.description,
-      price: formData.price,
-      stock: formData.stock,
-      image: formData.image,
-      categoryId: formData.categoryId,
-    };
+    const form = new FormData();
+    form.append("name", formData.name || "");
+    form.append("description", formData.description || "");
+    form.append("price", (formData.price || 0).toString());
+    form.append("stock", (formData.stock || 0).toString());
+    form.append("categoryId", (formData.categoryId || "").toString());
+    if (formData.image) {
+      form.append("image", formData.image);
+    }
+
+    console.log("Datos del formulario a enviar:", formData); // Ver los datos antes de enviarlos
 
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
+          body: form, // Enviar el FormData en lugar de JSON
         }
       );
       const data = await response.json();
+      console.log("Respuesta del servidor:", data); // Ver la respuesta del servidor
+
       if (response.ok) {
         alert("Producto actualizado con éxito");
       } else {
         alert(data.message || "Hubo un error al actualizar el producto");
       }
     } catch (error) {
+      console.error("Error al actualizar el producto:", error);
       alert("Hubo un error al actualizar el producto");
     }
   };
@@ -139,10 +159,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   if (error) {
     return <p>{error}</p>;
   }
-  const handleDeleteSuccess = () => {
-    alert("Producto eliminado con éxito");
-    window.location.reload(); // Aquí puedes redirigir al usuario o actualizar el estado
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -152,9 +168,14 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
         <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl overflow-hidden transition-transform transform hover:scale-105">
           <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
             <img
-              src={formData.image || "/images/default-image.jpg"}
+              src={
+                formData.image
+                  ? formData.image instanceof Blob
+                    ? URL.createObjectURL(formData.image)
+                    : formData.image // Asume que formData.image es una URL
+                  : "/images/default-image.jpg"
+              }
               alt={formData.name}
-              className="w-full h-full object-cover object-center"
             />
           </div>
         </div>
@@ -208,10 +229,10 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
           <div>
             <label className="block font-semibold">Imagen</label>
             <input
-              type="text"
+              id="image"
+              type="file"
               name="image"
-              value={formData.image}
-              onChange={handleChange}
+              onChange={handleImageChange}
               className="w-full p-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -220,7 +241,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
             <label className="block font-semibold">Categoría</label>
             <select
               name="categoryId"
-              value={formData.categoryId}
+              value={formData.categoryId || ""}
               onChange={handleChange}
               className="w-full p-2 border border-gray-300 rounded-md"
             >
@@ -235,16 +256,12 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
             </select>
           </div>
 
-          <DeleteProductButton
-            productId={parseInt(productId, 10)}
-            onDeleteSuccess={handleDeleteSuccess}
-          />
-
+          <DeleteProductButton productId={parseInt(productId, 10)} />
           <button
             type="submit"
-            className="w-full py-3 bg-blue-500 text-white font-semibold rounded-md mt-4"
+            className="w-full p-2 bg-indigo-600 text-white rounded-md"
           >
-            Guardar Cambios
+            Actualizar Producto
           </button>
         </div>
       </div>

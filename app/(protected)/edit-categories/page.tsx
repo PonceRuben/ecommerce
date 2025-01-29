@@ -111,7 +111,7 @@ export default function ManageCategories() {
   }
 
   return (
-    <div className="p-6 bg-[#01141f] text-white rounded-xl shadow-lg">
+    <div className="p-6 bg-[#f5f5f5] text-[#02242d] rounded-xl shadow-lg">
       <h2 className="text-2xl font-bold mb-4">Gestionar Categorías</h2>
 
       {/* Add New Category */}
@@ -121,11 +121,11 @@ export default function ManageCategories() {
           placeholder="Nueva categoría"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          className="flex-1 px-4 py-2 bg-[#02242d] text-white border border-[#03424a] rounded-full focus:outline-none focus:ring-2 focus:ring-[#03424a]"
+          className="flex-1 px-4 py-2 bg-white text-[#02242d] border border-[#d1d5db] rounded-full focus:outline-none focus:ring-2 focus:ring-[#a1a1aa]"
         />
         <button
           onClick={handleAddCategory}
-          className="px-4 py-2 bg-[#03424a] rounded-full hover:bg-[#046a6a] transition-colors"
+          className="px-4 py-2 bg-[#03424a] text-white rounded-full hover:bg-[#046a6a] transition-colors"
           disabled={isLoading}
         >
           {isLoading ? "Añadiendo..." : "Agregar"}
@@ -137,7 +137,7 @@ export default function ManageCategories() {
         {categories.map((category) => (
           <li
             key={category.id}
-            className="flex items-center justify-between p-4 bg-[#02242d] rounded-lg shadow-md"
+            className="flex items-center justify-between p-4 bg-white rounded-lg shadow-md"
           >
             {editCategory?.id === category.id ? (
               <input
@@ -146,7 +146,7 @@ export default function ManageCategories() {
                 onChange={(e) =>
                   setEditCategory({ ...editCategory, name: e.target.value })
                 }
-                className="flex-1 px-4 py-2 bg-[#01141f] text-white border border-[#03424a] rounded-full focus:outline-none focus:ring-2 focus:ring-[#03424a]"
+                className="flex-1 px-4 py-2 bg-[#f5f5f5] text-[#02242d] border border-[#d1d5db] rounded-full focus:outline-none focus:ring-2 focus:ring-[#a1a1aa]"
               />
             ) : (
               <span>{category.name}</span>
@@ -156,14 +156,14 @@ export default function ManageCategories() {
               {editCategory?.id === category.id ? (
                 <button
                   onClick={handleEditCategory}
-                  className="px-3 py-1 bg-[#03424a] rounded-full hover:bg-[#046a6a] transition-colors"
+                  className="px-3 py-1 bg-[#03424a] text-white rounded-full hover:bg-[#046a6a] transition-colors"
                 >
                   Guardar
                 </button>
               ) : (
                 <button
                   onClick={() => setEditCategory(category)}
-                  className="px-3 py-1 bg-[#03424a] rounded-full hover:bg-[#046a6a] transition-colors"
+                  className="px-3 py-1 bg-[#03424a] text-white rounded-full hover:bg-[#046a6a] transition-colors"
                 >
                   Editar
                 </button>
@@ -171,7 +171,7 @@ export default function ManageCategories() {
 
               <button
                 onClick={() => handleDeleteCategory(category.id)}
-                className="px-3 py-1 bg-red-600 rounded-full hover:bg-red-800 transition-colors"
+                className="px-3 py-1 bg-red-600 text-white rounded-full hover:bg-red-800 transition-colors"
               >
                 Eliminar
               </button>

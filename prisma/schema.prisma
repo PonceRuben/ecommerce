@@ -136,15 +136,16 @@ model Product {
 }
 
 model Order {
-  id            Int       @id @default(autoincrement())
-  userId        Int
-  totalAmount   Float
-  status        String    // Puede ser 'pendiente', 'enviado', 'entregado', etc.
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id])
-
-  orderItems    Order_Item[]
+  id          Int         @id @default(autoincrement())
+  userId      Int
+  status      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  totalPrice Float
+  orderItems  Order_Item[]
+  addressId   Int?
+  address     Address?     @relation(fields: [addressId], references: [id])
 }
 
 model Order_Item {
@@ -169,6 +170,7 @@ model Address {
   postalCode  String
   country     String
   user        User      @relation(fields: [userId], references: [id])
+  order       Order[]
 
   @@unique([userId])
 }
