@@ -4,69 +4,61 @@ import Busboy from "busboy";
 import { Storage } from "@google-cloud/storage";
 import { Readable } from "stream";
 
+// Configurar Google Cloud Storage
 const storage = new Storage({
   keyFilename: "concrete-zephyr-448817-t6-7e930e1aa9e3.json",
 });
 const bucket = storage.bucket("ecommerce-product-images-ruben-ponce");
 
-const DEFAULT_IMAGE_URL =
-  "https://storage.googleapis.com/ecommerce-product-images-ruben-ponce/products/1737988750260-default-image.jpg";
-
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Desactivar el parser de cuerpo de Next.js
   },
 };
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
-    const userId = parseInt(id, 10);
-    if (isNaN(userId)) {
-      return NextResponse.json(
-        { message: "ID de usuario inválido" },
-        { status: 400 }
-      );
-    }
+    const { id } = await params;
+    const productId = parseInt(id);
+    console.log("ID recibido en la API:", productId);
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { addresses: true },
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: true,
+      },
     });
 
-    if (!user) {
+    if (!product) {
+      console.log("Producto no encontrado");
       return NextResponse.json(
-        { message: "Usuario no encontrado" },
+        { message: "Producto no encontrado" },
         { status: 404 }
       );
     }
 
-    const mappedUser = {
-      name: user.name || "No disponible",
-      email: user.email || "No disponible",
-      image: user.image || DEFAULT_IMAGE_URL,
-      address:
-        user.addresses.length > 0
-          ? user.addresses[0]
-          : {
-              line1: "No disponible",
-              line2: "No disponible",
-              city: "No disponible",
-              postalCode: "No disponible",
-              country: "No disponible",
-            },
+    const mappedProduct = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      image: product.image,
+      category: product.category?.name,
+      stock: product.stock,
     };
 
+    console.log("Producto encontrado:", mappedProduct);
     return NextResponse.json(
-      { message: "Usuario encontrado", data: mappedUser },
+      { message: "Producto encontrado", data: mappedProduct },
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error al obtener el producto", error);
     return NextResponse.json(
-      { message: "Hubo un error al obtener el usuario" },
+      { message: "Hubo un error al obtener el producto" },
       { status: 500 }
     );
   }
@@ -74,117 +66,122 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = context.params;
-    const userId = parseInt(id, 10);
-    if (isNaN(userId)) {
-      return NextResponse.json(
-        { error: "ID de usuario inválido" },
-        { status: 400 }
-      );
-    }
-
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
+      console.log("Tipo de contenido inválido:", contentType);
       return NextResponse.json(
         { error: "Invalid Content-Type. Expected multipart/form-data" },
         { status: 400 }
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { addresses: true },
-    });
-
-    if (!existingUser) {
-      return NextResponse.json(
-        { error: "Usuario no encontrado" },
-        { status: 404 }
-      );
-    }
-
     const busboy = Busboy({ headers: { "content-type": contentType } });
-    let userData: any = {};
+
+    let productData: any = {};
     let imageUrl: string | null = null;
-    let addressData: any = {};
 
     const uploadPromise = new Promise<void>((resolve, reject) => {
       busboy.on("field", (name, value) => {
-        userData[name] = value;
+        productData[name] = value;
       });
 
       busboy.on("file", (_, file, info) => {
+        console.log("Archivo recibido:", info.filename);
         const { filename, mimeType } = info;
-        if (!filename)
+
+        if (!filename) {
+          console.log("No se ha recibido un archivo.");
           return reject(
             NextResponse.json({ error: "Archivo no válido" }, { status: 400 })
           );
+        }
 
-        const gcpFilePath = `users/${Date.now()}-${filename}`;
+        const gcpFilePath = `products/${Date.now()}-${filename}`;
         const gcpFile = bucket.file(gcpFilePath);
+
+        console.log(`Subiendo archivo a GCP: ${gcpFilePath}`);
 
         const stream = gcpFile.createWriteStream({
           metadata: { contentType: mimeType },
           resumable: false,
           public: true,
         });
+
         file.pipe(stream);
 
-        stream.on("finish", () => {
+        stream.on("finish", async () => {
           imageUrl = `https://storage.googleapis.com/${bucket.name}/${gcpFilePath}`;
           resolve();
         });
 
-        stream.on("error", (err) => reject(err));
+        stream.on("error", (err) => {
+          console.error("Error al subir archivo a GCP:", err);
+          reject(err);
+        });
       });
 
       busboy.on("finish", async () => {
+        const existingProduct = await prisma.product.findUnique({
+          where: { id: parseInt(params.id, 10) },
+        });
+
+        if (!existingProduct) {
+          return reject(
+            NextResponse.json(
+              { error: "Producto no encontrado" },
+              { status: 404 }
+            )
+          );
+        }
+
         await uploadPromise;
 
-        addressData = {
-          line1:
-            userData.line1 || existingUser.addresses[0]?.line1 || "Agregar",
-          line2:
-            userData.line2 || existingUser.addresses[0]?.line2 || "Agregar",
-          city: userData.city || existingUser.addresses[0]?.city || "Agregar",
-          postalCode:
-            userData.postalCode ||
-            existingUser.addresses[0]?.postalCode ||
-            "Agregar",
-          country:
-            userData.country || existingUser.addresses[0]?.country || "Agregar",
-        };
+        if (!imageUrl) {
+          console.log("URL de la imagen no asignada.");
+          return reject(
+            NextResponse.json(
+              { error: "Error al procesar la imagen" },
+              { status: 400 }
+            )
+          );
+        }
 
-        const finalImageUrl =
-          imageUrl || existingUser.image || DEFAULT_IMAGE_URL;
+        if (!productData.name || !productData.price || !imageUrl) {
+          console.log("Faltan datos del producto.");
+          return reject(
+            NextResponse.json(
+              { error: "Faltan datos del producto" },
+              { status: 400 }
+            )
+          );
+        }
 
         try {
-          const updatedUser = await prisma.user.update({
-            where: { id: existingUser.id },
+          const updatedProduct = await prisma.product.update({
+            where: { id: parseInt(params.id, 10) },
             data: {
-              name: userData.name || existingUser.name,
-              email: userData.email || existingUser.email,
-              image: finalImageUrl,
-              addresses: {
-                upsert: {
-                  where: { userId: existingUser.id },
-                  update: addressData,
-                  create: { ...addressData, userId: existingUser.id },
-                },
-              },
+              name: productData.name,
+              description: productData.description,
+              price: parseFloat(productData.price),
+              stock: parseInt(productData.stock, 10),
+              image: imageUrl,
+              categoryId: productData.categoryId
+                ? parseInt(productData.categoryId, 10)
+                : existingProduct.categoryId, // Mantener la categoría actual si no se recibe un nuevo categoryId
             },
           });
 
           return NextResponse.json({
-            message: "Usuario actualizado con éxito",
-            data: updatedUser,
+            message: "Producto modificado con éxito",
+            data: updatedProduct,
           });
         } catch (error) {
+          console.error("Error al modificar el producto:", error);
           return NextResponse.json(
-            { error: "Error al modificar el usuario" },
+            { error: "Error al modificar el producto" },
             { status: 500 }
           );
         }
@@ -195,10 +192,57 @@ export async function PUT(
     nodeStream.pipe(busboy);
 
     await uploadPromise;
-    return NextResponse.json({ message: "Usuario actualizado con éxito" });
+    return NextResponse.json({
+      message: "Producto actualizado con éxito",
+      data: productData,
+    });
   } catch (error) {
+    console.error("Error al procesar la solicitud:", error);
     return NextResponse.json(
       { error: "Error interno del servidor" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+
+    if (!id) {
+      console.log("ID de producto no proporcionado");
+      return NextResponse.json(
+        { message: "ID de producto es obligatorio" },
+        { status: 400 }
+      );
+    }
+
+    const productId = parseInt(id, 10);
+
+    if (isNaN(productId)) {
+      console.log("ID de producto no es válido:", id);
+      return NextResponse.json(
+        { message: "ID de producto no es válido" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.product.delete({
+      where: { id: productId },
+    });
+
+    console.log("Producto eliminado correctamente");
+    return NextResponse.json(
+      { message: "Producto eliminado correctamente" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error al eliminar el producto", error);
+    return NextResponse.json(
+      { message: "Hubo un error al eliminar el producto" },
       { status: 500 }
     );
   }
