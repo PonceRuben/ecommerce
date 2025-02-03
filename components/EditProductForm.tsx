@@ -258,6 +258,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
 
           <DeleteProductButton productId={parseInt(productId, 10)} />
           <button
+            onClick={handleSubmit}
             type="submit"
             className="w-full p-2 bg-indigo-600 text-white rounded-md"
           >

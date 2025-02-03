@@ -79,12 +79,17 @@ export async function PUT(
     }
 
     const busboy = Busboy({ headers: { "content-type": contentType } });
+    console.log(
+      "Inicializando busboy con headers:",
+      req.headers.get("content-type")
+    );
 
     let productData: any = {};
     let imageUrl: string | null = null;
 
     const uploadPromise = new Promise<void>((resolve, reject) => {
       busboy.on("field", (name, value) => {
+        console.log(`Campo recibido: ${name} = ${value}`);
         productData[name] = value;
       });
 
@@ -102,7 +107,7 @@ export async function PUT(
         const gcpFilePath = `products/${Date.now()}-${filename}`;
         const gcpFile = bucket.file(gcpFilePath);
 
-        console.log(`Subiendo archivo a GCP: ${gcpFilePath}`);
+        console.log("Subiendo archivo a GCP:", `${gcpFilePath}`);
 
         const stream = gcpFile.createWriteStream({
           metadata: { contentType: mimeType },
@@ -113,6 +118,7 @@ export async function PUT(
         file.pipe(stream);
 
         stream.on("finish", async () => {
+          console.log("Finalizando busboy...");
           imageUrl = `https://storage.googleapis.com/${bucket.name}/${gcpFilePath}`;
           resolve();
         });
@@ -158,19 +164,25 @@ export async function PUT(
             )
           );
         }
-
+        console.log("Datos recibidos:", productData);
+        console.log("Producto existente:", existingProduct);
         try {
           const updatedProduct = await prisma.product.update({
             where: { id: parseInt(params.id, 10) },
             data: {
-              name: productData.name,
-              description: productData.description,
-              price: parseFloat(productData.price),
-              stock: parseInt(productData.stock, 10),
-              image: imageUrl,
+              name: productData.name ?? existingProduct.name,
+              description:
+                productData.description ?? existingProduct.description,
+              price: productData.price
+                ? parseFloat(productData.price)
+                : existingProduct.price,
+              stock: productData.stock
+                ? parseInt(productData.stock, 10)
+                : existingProduct.stock,
+              image: imageUrl ?? existingProduct.image,
               categoryId: productData.categoryId
                 ? parseInt(productData.categoryId, 10)
-                : existingProduct.categoryId, // Mantener la categoría actual si no se recibe un nuevo categoryId
+                : existingProduct.categoryId,
             },
           });
 
@@ -187,11 +199,12 @@ export async function PUT(
         }
       });
     });
-
+    console.log("Cuerpo de la solicitud:", req.body);
     const nodeStream = Readable.from(req.body as any);
+    console.log("Cuerpo del request como stream:", req.body);
+
     nodeStream.pipe(busboy);
 
-    await uploadPromise;
     return NextResponse.json({
       message: "Producto actualizado con éxito",
       data: productData,
