@@ -1,10 +1,6 @@
 "use client";
 
-import LogoutButton from "@/components/LogoutButton";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import AddProductButton from "@/components/AddProductButton";
-import EditCategoryButton from "@/components/EditCategoryButton";
 import EditRoleForm from "@/components/EditRoleForm";
 
 // Esta función maneja el envío del formulario y la actualización del rol del usuario

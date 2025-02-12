@@ -2,7 +2,7 @@
 
 import { useCart } from "../app/context/CartContext";
 import { useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 type AddToCartButtonProps = {

@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     });
 
     if (!userAddress) {
-      const defaultAddress = await prisma.address.create({
+      await prisma.address.create({
         data: {
           userId: userId,
           line1: "Calle Falsa 123",

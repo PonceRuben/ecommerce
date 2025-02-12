@@ -18,7 +18,7 @@ export const config = {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -66,9 +66,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("multipart/form-data")) {
       console.log("Tipo de contenido inválido:", contentType);
@@ -84,7 +85,7 @@ export async function PUT(
       req.headers.get("content-type")
     );
 
-    let productData: any = {};
+    const productData: any = {};
     let imageUrl: string | null = null;
 
     const uploadPromise = new Promise<void>((resolve, reject) => {
@@ -131,7 +132,7 @@ export async function PUT(
 
       busboy.on("finish", async () => {
         const existingProduct = await prisma.product.findUnique({
-          where: { id: parseInt(params.id, 10) },
+          where: { id: parseInt(id, 10) },
         });
 
         if (!existingProduct) {
@@ -168,7 +169,7 @@ export async function PUT(
         console.log("Producto existente:", existingProduct);
         try {
           const updatedProduct = await prisma.product.update({
-            where: { id: parseInt(params.id, 10) },
+            where: { id: parseInt(id, 10) },
             data: {
               name: productData.name ?? existingProduct.name,
               description:
@@ -220,10 +221,10 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!id) {
       console.log("ID de producto no proporcionado");

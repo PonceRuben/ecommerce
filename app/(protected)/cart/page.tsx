@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { useCart } from "../../context/CartContext";
 import CheckoutButton from "../../../components/CheckoutButton";
+import Image from "next/image";
 
 export default function CartPage() {
   const { data: session } = useSession();
@@ -40,10 +41,12 @@ export default function CartPage() {
               key={item.id}
               className="flex justify-between items-center bg-white p-4 rounded-lg shadow-lg"
             >
-              <img
+              <Image
                 src={item.image}
                 alt={item.name}
                 className="w-16 h-16 object-cover"
+                width={500}
+                height={500}
               />
               <div className="flex-1 ml-4">
                 <h2 className="font-bold">{item.name}</h2>

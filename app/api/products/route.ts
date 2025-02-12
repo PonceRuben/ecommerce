@@ -29,7 +29,7 @@ type Response = {
   data: Product[] | Product;
 };
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Error al obtener productos");
     return NextResponse.json(
-      { message: "Hubo un error al obtener los productos" },
+      { message: "Hubo un error al obtener los productos", error },
       { status: 500 }
     );
   }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 
     const busboy = Busboy({ headers: { "content-type": contentType } });
 
-    let productData: any = {};
+    const productData: any = {};
     let imageUrl: string | null = null;
 
     // Promesa para la carga de archivo

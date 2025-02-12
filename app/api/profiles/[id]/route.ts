@@ -20,10 +20,10 @@ export const config = {
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await params;
     const userId = parseInt(id, 10);
     if (isNaN(userId)) {
       return NextResponse.json(
@@ -64,9 +64,9 @@ export async function GET(
       { message: "Usuario encontrado", data: mappedUser },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (e) {
     return NextResponse.json(
-      { message: "Hubo un error al obtener el usuario" },
+      { message: "Hubo un error al obtener el usuario", e },
       { status: 500 }
     );
   }
@@ -74,10 +74,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     const userId = parseInt(id, 10);
     if (isNaN(userId)) {
       return NextResponse.json(
@@ -107,7 +107,7 @@ export async function PUT(
     }
 
     const busboy = Busboy({ headers: { "content-type": contentType } });
-    let userData: any = {};
+    const userData: any = {};
     let imageUrl: string | null = null;
     let addressData: any = {};
 
@@ -182,9 +182,9 @@ export async function PUT(
             message: "Usuario actualizado con éxito",
             data: updatedUser,
           });
-        } catch (error) {
+        } catch (e) {
           return NextResponse.json(
-            { error: "Error al modificar el usuario" },
+            { error: "Error al modificar el usuario", e },
             { status: 500 }
           );
         }
@@ -196,9 +196,9 @@ export async function PUT(
 
     await uploadPromise;
     return NextResponse.json({ message: "Usuario actualizado con éxito" });
-  } catch (error) {
+  } catch (e) {
     return NextResponse.json(
-      { error: "Error interno del servidor" },
+      { error: "Error interno del servidor", e },
       { status: 500 }
     );
   }

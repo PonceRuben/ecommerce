@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import EditProfileForm from "../../../../components/EditProfileForm";
 
 export default function EditProfilePage() {
-  const router = useRouter();
   const pathname = usePathname(); // Obtén la ruta actual
 
   // Extraemos el id del usuario de la URL.

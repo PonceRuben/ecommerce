@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import DeleteProductButton from "./DeleteProductButton";
+import Image from "next/image";
 
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  image: string | null;
-  categoryId: number;
-}
+// interface Product {
+//   id: number;
+//   name: string;
+//   description: string;
+//   price: number;
+//   stock: number;
+//   image: string | null;
+//   categoryId: number;
+// }
 
 interface Category {
   id: number;
@@ -81,8 +82,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
     >
   ) => {
     const { name, value } = e.target;
-
-    console.log(`Cambio en el campo: ${name} con valor: ${value}`);
 
     setFormData((prev) => ({
       ...prev,
@@ -167,7 +166,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
         {/* Imagen del Producto */}
         <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl overflow-hidden transition-transform transform hover:scale-105">
           <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
-            <img
+            <Image
               src={
                 formData.image
                   ? formData.image instanceof Blob
@@ -176,6 +175,8 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                   : "/images/default-image.jpg"
               }
               alt={formData.name}
+              width={500}
+              height={500}
             />
           </div>
         </div>

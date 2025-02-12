@@ -26,7 +26,7 @@ async function fetchCategories() {
 export default async function Category({
   params,
 }: {
-  params: { category: string };
+  params: Promise<{ category: string }>;
 }) {
   const res = await params;
   const categoria = decodeURIComponent(res.category || "");

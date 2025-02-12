@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface ProductCardProps {
   image: string;
   title: string;
@@ -18,10 +20,12 @@ export default function ProductCard({
     >
       {/* Product Image */}
       <div className="w-full h-[250px] overflow-hidden rounded-[20px] border-2 border-[#03424a] shadow-md">
-        <img
+        <Image
           src={image}
           alt={title}
           className="w-full h-full object-cover object-center"
+          width={500}
+          height={500}
         />
       </div>
 

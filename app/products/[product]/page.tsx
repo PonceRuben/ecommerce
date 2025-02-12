@@ -4,14 +4,35 @@ import { useState, useEffect } from "react";
 import AddToCartButton from "@/components/AddToCartButton";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 
-export default function Product({ params }: { params: { product: string } }) {
-  const { product: productId } = params;
+export default function Product({
+  params,
+}: {
+  params: Promise<{ product: string }>;
+}) {
   const { data: session } = useSession();
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [productId, setProductId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setProductId(resolvedParams.product);
+      } catch (e) {
+        setError("Failed to load product ID");
+        console.log(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchParams();
+  }, [params]);
 
   useEffect(() => {
     if (!productId) return;
@@ -72,10 +93,12 @@ export default function Product({ params }: { params: { product: string } }) {
         {/* Imagen del Producto */}
         <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl hover:shadow-3xl overflow-hidden transition-transform transform hover:scale-105">
           <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
-            <img
+            <Image
               src={product.image}
               alt={product.name}
               className="w-full h-full object-cover object-center"
+              width={500}
+              height={500}
             />
           </div>
         </div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import GoToEditProfileButton from "@/components/GoToEditProfileButton";
+import Image from "next/image";
 
 export default function Profile() {
   const { data: session } = useSession();
@@ -71,10 +71,12 @@ export default function Profile() {
         {/* Imagen del Perfil */}
         <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl hover:shadow-3xl overflow-hidden transition-transform transform hover:scale-105">
           <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
-            <img
+            <Image
               src={user.image}
               alt={user.name}
               className="w-full h-full object-cover object-center"
+              width={500}
+              height={500}
             />
           </div>
         </div>

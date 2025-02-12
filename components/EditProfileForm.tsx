@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useState, useEffect } from "react";
 
 interface EditProfileFormProps {
@@ -124,7 +125,7 @@ export default function EditProfileForm({ userId }: EditProfileFormProps) {
       <div className="flex justify-center gap-12 px-6 py-10">
         <div className="w-full max-w-lg p-4 bg-white rounded-xl shadow-2xl overflow-hidden">
           <div className="w-full h-[450px] overflow-hidden rounded-xl border border-[#03424a] shadow-xl">
-            <img
+            <Image
               src={
                 formData.photo
                   ? formData.photo instanceof Blob
@@ -133,6 +134,8 @@ export default function EditProfileForm({ userId }: EditProfileFormProps) {
                   : "https://storage.googleapis.com/ecommerce-product-images-ruben-ponce/products/1737988750260-default-image.jpg"
               }
               alt={formData.name}
+              width={500}
+              height={500}
             />
           </div>
         </div>

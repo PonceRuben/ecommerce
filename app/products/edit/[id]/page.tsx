@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import EditProductForm from "@/components/EditProductForm";
 
 export default function EditProductPage() {
-  const router = useRouter();
   const pathname = usePathname(); // Obtén la ruta actual
 
   // Extraemos el id del producto de la URL.
